@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Node.js Backend Developer",
+    "company": "Test Company",
+    "location": "Bangalore",
+    "url": "https://example.com/job/123",
+    "source": "test",
+    "description": "\n            Looking for a Node.js backend developer\n            with experience in JavaScript, MongoDB,\n            Redis and REST APIs.\n        ",
+    "experience": "3-5 years",
+    "discoveredAt": "2026-09-24T17:07:18.001Z"
+  }
+]

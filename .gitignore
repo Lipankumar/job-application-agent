@@ -3,3 +3,5 @@ node_modules/
 *.log
 src/config/candidate.json
 src/documents/resume.pdf
+data/browser-profile/
+data/*.png
