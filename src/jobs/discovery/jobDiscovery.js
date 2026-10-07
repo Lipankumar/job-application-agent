@@ -1,27 +1,63 @@
-const { createJob } = require("../job");
+const { chromium } = require("playwright");
+
+const {
+    loginToNaukri
+} = require("../naukri/naukriLogin");
+
+const {
+    discoverNaukriJobs
+} = require("./sources/naukriSource");
 
 async function discoverJobs() {
 
-    const jobs = [];
+    console.log("\n🔎 Discovering jobs from Naukri...");
 
-    // Temporary test job
-    const job = createJob({
-        title: "Node.js Backend Developer",
-        company: "Test Company",
-        location: "Bangalore",
-        url: "https://example.com/job/123",
-        source: "test",
-        description: `
-            Looking for a Node.js backend developer
-            with experience in JavaScript, MongoDB,
-            Redis and REST APIs.
-        `,
-        experience: "3-5 years"
+    const browser = await chromium.launch({
+        headless: false
     });
 
-    jobs.push(job);
+    const page = await browser.newPage();
 
-    return jobs;
+    try {
+
+        /*
+         * Login to Naukri
+         */
+        await loginToNaukri(page);
+
+        /*
+         * Discover real jobs
+         */
+        const jobs = await discoverNaukriJobs(page, {
+            keyword: "Node.js Backend Developer",
+            location: "Bangalore",
+            maxJobs: 10
+        });
+
+        console.log(
+            `\n📋 Real jobs discovered: ${jobs.length}`
+        );
+
+        return jobs;
+
+    } catch (error) {
+
+        console.error(
+            "\n❌ Job discovery failed:"
+        );
+
+        console.error(error);
+
+        throw error;
+
+    } finally {
+
+        await browser.close();
+
+        console.log(
+            "🌐 Discovery browser closed."
+        );
+    }
 }
 
 module.exports = {

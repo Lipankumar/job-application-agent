@@ -1,6 +1,5 @@
-
 function normalize(text = "") {
-    return text
+    return String(text)
         .toLowerCase()
         .trim()
         .replace(/\s+/g, " ");
@@ -24,14 +23,13 @@ async function fillForm(page, candidate) {
     const result = await page.evaluate((candidate) => {
 
         function normalize(text = "") {
-            return text
+            return String(text)
                 .toLowerCase()
                 .trim()
                 .replace(/\s+/g, " ");
         }
 
         function getFieldText(field) {
-
             return normalize(
                 [
                     field.getAttribute("name"),
@@ -52,7 +50,7 @@ async function fillForm(page, candidate) {
                 "Checking:",
                 text,
                 "| currentCompany:",
-                candidate.currentCompany
+                candidate.experience?.currentCompany
             );
 
             // NAME
@@ -95,7 +93,7 @@ async function fillForm(page, candidate) {
                 text.includes("experience") ||
                 text.includes("years of experience")
             ) {
-                return candidate.experience;
+                return candidate.experience?.years;
             }
 
             // CURRENT COMPANY
@@ -106,9 +104,75 @@ async function fillForm(page, candidate) {
                 text.includes("current employer") ||
                 text.includes("employer")
             ) {
-                console.log(">>> CURRENT COMPANY MATCHED");
+                return candidate.experience?.currentCompany;
+            }
 
-                return candidate.currentCompany;
+            return null;
+        }
+
+        /*
+         * Find an experience option that contains
+         * the candidate's years of experience.
+         *
+         * Examples:
+         *
+         * candidate = 3.8
+         *
+         * "1-3 Years"  -> false
+         * "3-5 Years"  -> true
+         */
+        function findExperienceOption(select, years) {
+
+            if (typeof years !== "number") {
+                return null;
+            }
+
+            const options = [...select.options];
+
+            for (const option of options) {
+
+                const text = normalize(option.textContent);
+
+                /*
+                 * Match ranges such as:
+                 *
+                 * 0-1 years
+                 * 1-3 years
+                 * 3-5 years
+                 * 5-7 years
+                 */
+                const rangeMatch = text.match(
+                    /(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)/
+                );
+
+                if (rangeMatch) {
+
+                    const min = Number(rangeMatch[1]);
+                    const max = Number(rangeMatch[2]);
+
+                    if (years >= min && years <= max) {
+                        return option;
+                    }
+                }
+
+                /*
+                 * Match options such as:
+                 *
+                 * "3 years"
+                 * "4 years"
+                 */
+                const singleMatch = text.match(
+                    /(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/
+                );
+
+                if (singleMatch) {
+
+                    const optionYears = Number(singleMatch[1]);
+
+                    if (Math.round(years) === optionYears) {
+                        return option;
+                    }
+                }
             }
 
             return null;
@@ -142,50 +206,98 @@ async function fillForm(page, candidate) {
              */
             if (field.tagName === "SELECT") {
 
-                const option = [...field.options].find(
-                    option =>
-                        normalize(option.textContent) ===
-                        normalize(String(value))
-                );
+                let option = null;
+
+                /*
+                 * EXPERIENCE SELECT
+                 */
+                if (
+                    fieldText.includes("experience") &&
+                    typeof value === "number"
+                ) {
+                    option = findExperienceOption(
+                        field,
+                        value
+                    );
+                }
+
+                /*
+                 * NORMAL SELECT
+                 */
+                if (!option) {
+
+                    option = [...field.options].find(
+                        option =>
+                            normalize(option.textContent) ===
+                            normalize(String(value))
+                    );
+                }
+
+                /*
+                 * Partial text match fallback
+                 */
+                if (!option) {
+
+                    option = [...field.options].find(
+                        option =>
+                            normalize(option.textContent).includes(
+                                normalize(String(value))
+                            )
+                    );
+                }
 
                 if (option) {
 
                     field.value = option.value;
 
                     field.dispatchEvent(
+                        new Event("input", {
+                            bubbles: true
+                        })
+                    );
+
+                    field.dispatchEvent(
                         new Event("change", {
                             bubbles: true
                         })
                     );
+
+                    filled.push({
+                        field: fieldText,
+                        value: option.textContent.trim()
+                    });
+
+                    console.log(
+                        "SELECTED:",
+                        option.textContent.trim()
+                    );
                 }
 
+                return;
             }
 
             /*
              * INPUT / TEXTAREA
              */
-            else {
+            field.focus();
 
-                field.focus();
+            field.value = String(value);
 
-                field.value = String(value);
+            field.dispatchEvent(
+                new Event("input", {
+                    bubbles: true
+                })
+            );
 
-                field.dispatchEvent(
-                    new Event("input", {
-                        bubbles: true
-                    })
-                );
-
-                field.dispatchEvent(
-                    new Event("change", {
-                        bubbles: true
-                    })
-                );
-            }
+            field.dispatchEvent(
+                new Event("change", {
+                    bubbles: true
+                })
+            );
 
             filled.push({
                 field: fieldText,
-                value: value
+                value: String(value)
             });
 
         });
@@ -210,4 +322,3 @@ async function fillForm(page, candidate) {
 module.exports = {
     fillForm
 };
-

@@ -20,67 +20,35 @@ secrets.json
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-pnpm-debug.log*
 
 
 # ==============================
-# Playwright
+# Playwright / Browser Sessions
 # ==============================
 
-playwright-report/
-test-results/
-blob-report/
-playwright/.cache/
+browser-profile/
+**/browser-profile/
 
-
-# ==============================
-# Logs
-# ==============================
-
-*.log
-logs/
+playwright-profile/
+**/playwright-profile/
 
 
 # ==============================
-# OS files
+# Private Documents
 # ==============================
 
-.DS_Store
-Thumbs.db
+src/documents/resume.pdf
 
 
 # ==============================
-# VS Code
+# Editor
 # ==============================
 
 .vscode/
-!.vscode/settings.json
 
 
 # ==============================
-# Personal / Candidate Data
+# Local application data
 # ==============================
 
-# Candidate profile may contain personal information
-src/config/candidate.json
-
-# Resume
-src/documents/resume.pdf
-src/documents/*.docx
-
-# Generated application history
-src/data/application-history.json
-
-# Other generated application data
-src/data/*.json
-!src/data/example.json
-
-
-# ==============================
-# Temporary files
-# ==============================
-
-*.tmp
-*.temp
-*.bak
-data/browser-profile/
+src/data/

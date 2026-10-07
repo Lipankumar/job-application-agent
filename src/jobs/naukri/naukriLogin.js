@@ -1,8 +1,5 @@
 require("dotenv").config();
-
-
 async function loginToNaukri(page) {
-
     const email = process.env.NAUKRI_EMAIL;
     const password = process.env.NAUKRI_PASSWORD;
 
@@ -21,11 +18,6 @@ async function loginToNaukri(page) {
 
     await page.waitForTimeout(3000);
 
-    /*
-     * Naukri can change its selectors.
-     * We try multiple selectors instead of relying on one.
-     */
-
     const emailInput = page.locator(
         'input[placeholder*="Email"], input[type="email"], input[name="email"]'
     ).first();
@@ -40,7 +32,6 @@ async function loginToNaukri(page) {
     });
 
     await emailInput.fill(email);
-
     await passwordInput.fill(password);
 
     console.log("Login credentials entered.");
@@ -55,9 +46,21 @@ async function loginToNaukri(page) {
 
     console.log("Login attempt completed.");
 
+    // Verify login
+    const currentUrl = page.url();
+
+    console.log(`Current URL: ${currentUrl}`);
+
+    if (currentUrl.includes("/nlogin/login")) {
+        throw new Error(
+            "Naukri login was not successful. Still on login page."
+        );
+    }
+
+    console.log("✅ Naukri login successful.");
+
     return true;
 }
-
 
 module.exports = {
     loginToNaukri

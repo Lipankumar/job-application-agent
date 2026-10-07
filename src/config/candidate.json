@@ -1,0 +1,82 @@
+{
+  "name": "LIPAN KUMAR DAKUA",
+  "email": "",
+  "phone": "",
+  "experience": {
+    "years": 3.8,
+    "level": "Senior Backend Engineer / SDE-2",
+    "currentRole": "SDE-2 / SDE-1 at Zype",
+    "currentCompany": "Zype",
+    "primaryDomain": "FinTech / Personal Lending"
+  },
+  "skills": [
+    "Node.js",
+    "Express.js",
+    "TypeScript",
+    "JavaScript",
+    "REST APIs",
+    "Microservices",
+    "Backend Architecture",
+    "API Design",
+    "Web Applications",
+    "Distributed Systems",
+    "Event-Driven Architecture",
+    "Asynchronous Processing",
+    "Performance Optimization",
+    "MySQL",
+    "MongoDB",
+    "PostgreSQL",
+    "Redis",
+    "Elasticsearch",
+    "RabbitMQ",
+    "Kafka",
+    "AWS",
+    "Docker",
+    "CI/CD",
+    "Jira",
+    "npm",
+    "Git",
+    "Cursor",
+    "ChatGPT",
+    "LLM APIs",
+    "LangChain",
+    "LangGraph",
+    "Generative AI",
+    "AI Agents",
+    "Tool Calling",
+    "Agent Memory",
+    "Planning",
+    "Java",
+    "Data Structures & Algorithms",
+    "React.js",
+    "HTML",
+    "CSS",
+    "Bootstrap"
+  ],
+  "targetRoles": [
+    "SDE-2",
+    "Backend Engineer",
+    "Node.js Developer",
+    "Software Engineer"
+  ],
+  "preferredLocations": [
+    "Bangalore",
+    "Remote"
+  ],
+  "noticePeriod": {
+    "days": 60,
+    "currentlyServing": false
+  },
+  "workPreferences": {
+    "jobType": "Full-time",
+    "workMode": [
+      "Hybrid",
+      "Remote",
+      "On-site"
+    ],
+    "companyType": [
+      "Product-based",
+      "MNC"
+    ]
+  }
+}

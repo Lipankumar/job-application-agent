@@ -1,21 +1,31 @@
 function createJob({
+    id,
     title,
     company,
     location,
     url,
     source,
+    skills = [],
     description = "",
-    experience = null
+    experience = null,
+    matchScore = null,
+    postedAt = null
 }) {
     return {
+        id: id || `${source}-${Date.now()}`,
+
         title,
         company,
         location,
         url,
         source,
+
+        skills,
         description,
         experience,
-        discoveredAt: new Date().toISOString()
+
+        matchScore,
+        postedAt
     };
 }
 
