@@ -16,17 +16,22 @@ function normalizePostedAt(value) {
 
     const now = Date.now();
 
-    // "just now"
-    if (
-        text.includes("just now") ||
-        text.includes("moments ago")
-    ) {
+    if (/\b(today|just posted|just now|moments ago)\b/.test(text)) {
         return new Date(now).toISOString();
     }
 
-    // "2 hours ago"
+    if (/\bfew minutes ago\b/.test(text)) {
+        return new Date(now - 5 * 60 * 1000).toISOString();
+    }
+
+    if (/\bfew hours ago\b/.test(text)) {
+        return new Date(now - 3 * 60 * 60 * 1000).toISOString();
+    }
+
+    // "just now"
+    // Relative timestamps shown by job boards.
     const hoursMatch = text.match(
-        /(\d+(?:\.\d+)?)\s*hours?\s*ago/
+        /(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\s*ago/
     );
 
     if (hoursMatch) {
@@ -39,7 +44,7 @@ function normalizePostedAt(value) {
 
     // "30 minutes ago"
     const minutesMatch = text.match(
-        /(\d+)\s*minutes?\s*ago/
+        /(\d+)\s*(?:minutes?|mins?)\s*ago/
     );
 
     if (minutesMatch) {
@@ -50,7 +55,6 @@ function normalizePostedAt(value) {
         ).toISOString();
     }
 
-    // "1 day ago"
     const daysMatch = text.match(
         /(\d+)\s*days?\s*ago/
     );

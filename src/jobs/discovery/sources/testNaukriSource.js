@@ -1,13 +1,9 @@
-const { chromium } = require("playwright");
+const { launchBrowser } = require("../../../browser/browser");
 const { loginToNaukri } = require("../../naukri/naukriLogin");
 const { discoverNaukriJobs } = require("../sources/naukriSource");
 
 async function test() {
-    const browser = chromium.launchPersistentContext("./browser-profile", {
-                        headless: false
-                    });
-
-    const page = await browser.newPage();
+    const { context, page } = await launchBrowser();
 
     try {
         await loginToNaukri(page);
@@ -27,11 +23,13 @@ async function test() {
         });
 
         console.log("\nPress Ctrl+C when finished reviewing.");
-        await new Promise(() => {});
+        await new Promise(resolve => process.once("SIGINT", resolve));
 
     } catch (error) {
         console.error("\n❌ Naukri discovery failed:");
         console.error(error);
+    } finally {
+        await context.close();
     }
 }
 

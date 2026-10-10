@@ -2,6 +2,6 @@
   "minimumMatchScore": 70,
   "jobAgeHours": 24,
   "maxApplicationsPerBatch": 10,
-  "requireHumanConfirmation": true,
-  "autoSubmit": false
+  "requireHumanConfirmation": false,
+  "autoSubmit": true
 }

@@ -51,4 +51,5 @@ src/documents/resume.pdf
 # Local application data
 # ==============================
 
+/data/browser-profile/
 src/data/

@@ -26,6 +26,7 @@ async function runBatch() {
 
     // 2. Match jobs
     const matchedJobs = [];
+    const belowThreshold = [];
 
     for (const job of jobs) {
         const result = matchJob(job, candidate);
@@ -39,6 +40,11 @@ async function runBatch() {
 
         if (result.score >= MATCH_THRESHOLD) {
             matchedJobs.push(job);
+        } else {
+            belowThreshold.push(job);
+            console.log(
+                `⏭️ ${job.title} at ${job.company}: SKIPPED — match score ${result.score}% is below ${MATCH_THRESHOLD}%`
+            );
         }
     }
 
@@ -48,6 +54,7 @@ async function runBatch() {
 
     if (matchedJobs.length === 0) {
         console.log("⚠️ No suitable jobs found.");
+        console.log(`Run totals: discovered ${jobs.length}, applied 0, skipped ${belowThreshold.length}, failed 0, needs review 0.`);
         return;
     }
 
@@ -57,7 +64,17 @@ async function runBatch() {
     applicationAgent.addJobs(matchedJobs);
 
     // 4. Start application process
-    await applicationAgent.processBatch();
+    const applicationSummary = await applicationAgent.processBatch();
+
+    console.log("\n=================================");
+    console.log("FULL RUN TOTALS");
+    console.log("=================================");
+    console.log(`Discovered: ${jobs.length}`);
+    console.log(`Applied: ${applicationSummary.applied}`);
+    console.log(`Skipped: ${belowThreshold.length + applicationSummary.skipped} (${belowThreshold.length} below match threshold)`);
+    console.log(`Failed: ${applicationSummary.failed}`);
+    console.log(`Needs human review: ${applicationSummary.needsReview}`);
+    console.log(`Not processed: ${applicationSummary.notProcessed}`);
 }
 
 module.exports = {

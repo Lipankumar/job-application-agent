@@ -7,7 +7,8 @@ async function launchBrowser() {
         browserConfig.userDataDir,
         {
             headless: browserConfig.headless,
-            slowMo: browserConfig.slowMo
+            slowMo: browserConfig.slowMo,
+            channel: browserConfig.channel
         }
     );
 

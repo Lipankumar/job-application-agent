@@ -59,6 +59,10 @@ function addApplication(application) {
             application.date ||
             new Date().toISOString().split("T")[0],
 
+        createdAt:
+            application.createdAt ||
+            new Date().toISOString(),
+
         platform:
             application.platform ||
             "unknown",

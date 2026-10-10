@@ -1,11 +1,13 @@
 const { createJob } = require("../../job");
 const { removeDuplicates } = require("../../storage/jobDeduplicator");
+const normalizePostedAt = require("../../normalizeJobDate");
 
 async function discoverNaukriJobs(page, options = {}) {
     const {
         keyword = "Node.js Backend Developer",
         location = "Bangalore",
-        maxJobs = 10
+        maxJobs = 10,
+        maxAgeHours = 24
     } = options;
 
     console.log("\n🔎 Searching Naukri...");
@@ -25,7 +27,7 @@ async function discoverNaukriJobs(page, options = {}) {
             keywordSlug
         )}-jobs-in-${encodeURIComponent(
             locationSlug
-        )}`;
+        )}?jobAge=1`;
 
     console.log(`🌐 Opening: ${searchUrl}`);
 
@@ -52,10 +54,9 @@ async function discoverNaukriJobs(page, options = {}) {
      * Read more cards than requested because Naukri
      * may contain duplicate cards.
      */
-    const scanLimit = Math.min(
-        cardCount,
-        Math.max(maxJobs * 3, maxJobs)
-    );
+    const scanLimit = cardCount;
+    let skippedUnknownDate = 0;
+    let skippedOld = 0;
 
     for (let i = 0; i < scanLimit; i++) {
         const card = cards.nth(i);
@@ -97,7 +98,37 @@ async function discoverNaukriJobs(page, options = {}) {
                 .getAttribute("href")
                 .catch(() => null);
 
+            const postedLabel = await card.evaluate(element => {
+                const relativeDate = /(?:just now|just posted|moments ago|today|yesterday|few (?:minutes|hours) ago|\d+\s*(?:minutes?|mins?|hours?|hrs?|days?)\s*ago)/i;
+                const candidates = Array.from(element.querySelectorAll(
+                    'time[datetime], [class*="post-day" i], [class*="posted" i], [class*="date" i], span, small'
+                ));
+                const match = candidates
+                    .map(node => ({
+                        text: (node.innerText || node.textContent || "").trim(),
+                        datetime: node.getAttribute("datetime")
+                    }))
+                    .filter(item => item.datetime || relativeDate.test(item.text))
+                    .sort((a, b) => a.text.length - b.text.length)[0];
+
+                return match?.datetime || match?.text || null;
+            }).catch(() => null);
+
             if (!title || !link) {
+                continue;
+            }
+
+            const postedAt = normalizePostedAt(postedLabel);
+            if (!postedAt) {
+                skippedUnknownDate++;
+                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (posting time unavailable)`);
+                continue;
+            }
+
+            const ageHours = (Date.now() - new Date(postedAt).getTime()) / (60 * 60 * 1000);
+            if (ageHours < 0 || ageHours > maxAgeHours) {
+                skippedOld++;
+                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (posted ${ageHours.toFixed(1)} hours ago)`);
                 continue;
             }
 
@@ -128,7 +159,7 @@ async function discoverNaukriJobs(page, options = {}) {
                 skills: [],
                 description: "",
                 experience: cleanExperience,
-                postedAt: new Date().toISOString()
+                postedAt
             });
 
             jobs.push(job);
@@ -141,6 +172,8 @@ async function discoverNaukriJobs(page, options = {}) {
     }
 
     console.log(`\n📦 Raw jobs collected: ${jobs.length}`);
+    console.log(`🕒 Skipped outside the last ${maxAgeHours} hours: ${skippedOld}`);
+    console.log(`❔ Skipped because posting time was unavailable: ${skippedUnknownDate}`);
 
     /*
      * Use the existing shared deduplicator.
@@ -161,6 +194,7 @@ async function discoverNaukriJobs(page, options = {}) {
         console.log(
             `✅ ${index + 1}. ${job.title} — ${job.company}`
         );
+        console.log(`   Posted: ${job.postedAt}`);
     });
 
     return finalJobs;

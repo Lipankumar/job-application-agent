@@ -28,6 +28,7 @@ function getFieldText(field) {
         [
             field.name,
             field.id,
+            field.label,
             field.placeholder,
             field.ariaLabel,
             field.type,

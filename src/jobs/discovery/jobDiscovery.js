@@ -1,4 +1,4 @@
-const { chromium } = require("playwright");
+const { launchBrowser } = require("../../browser/browser");
 
 const {
     loginToNaukri
@@ -7,16 +7,13 @@ const {
 const {
     discoverNaukriJobs
 } = require("./sources/naukriSource");
+const { jobAgeHours } = require("../../config/application.json");
 
 async function discoverJobs() {
 
     console.log("\n🔎 Discovering jobs from Naukri...");
 
-    const browser = await chromium.launch({
-        headless: false
-    });
-
-    const page = await browser.newPage();
+    const { context, page } = await launchBrowser();
 
     try {
 
@@ -31,7 +28,8 @@ async function discoverJobs() {
         const jobs = await discoverNaukriJobs(page, {
             keyword: "Node.js Backend Developer",
             location: "Bangalore",
-            maxJobs: 10
+            maxJobs: 10,
+            maxAgeHours: jobAgeHours
         });
 
         console.log(
@@ -52,7 +50,7 @@ async function discoverJobs() {
 
     } finally {
 
-        await browser.close();
+        await context.close();
 
         console.log(
             "🌐 Discovery browser closed."

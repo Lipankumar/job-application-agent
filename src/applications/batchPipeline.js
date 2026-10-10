@@ -11,28 +11,42 @@ class BatchPipeline {
         console.log("\n🚀 Starting job application pipeline\n");
 
         // 1. Filter eligible jobs
-        const eligibleJobs = jobs
-            .filter(job => {
-                const result = this.isEligible(job);
+        const eligibleBeforeLimit = [];
+        const rejectedJobs = [];
 
-                console.log(
-                    `${result.eligible ? "✅" : "❌"} ${job.title}`
-                );
+        for (const job of jobs) {
+            const result = this.isEligible(job);
+            console.log(`${result.eligible ? "✅" : "⏭️"} ${job.title}`);
 
-                if (!result.eligible) {
-                    console.log(`   Reason: ${result.reason}`);
-                }
+            if (result.eligible) {
+                eligibleBeforeLimit.push(job);
+            } else {
+                rejectedJobs.push({ job, reason: result.reason });
+                console.log(`   Status: SKIPPED — ${result.reason}`);
+            }
+        }
 
-                return result.eligible;
-        })
-        .slice(0, config.maxApplicationsPerBatch);
+        const eligibleJobs = eligibleBeforeLimit.slice(0, config.maxApplicationsPerBatch);
+        const cappedJobs = eligibleBeforeLimit.slice(config.maxApplicationsPerBatch);
+        for (const job of cappedJobs) {
+            rejectedJobs.push({
+                job,
+                reason: `Batch limit of ${config.maxApplicationsPerBatch} reached`
+            });
+            console.log(`⏭️ ${job.title} at ${job.company}: SKIPPED — batch limit reached`);
+        }
+
+        const rejectedCount = rejectedJobs.length;
+        const cappedCount = cappedJobs.length;
 
         console.log(
             `\n📊 Eligible jobs: ${eligibleJobs.length}/${jobs.length}`
         );
+        console.log(`📊 Rejected or capped: ${rejectedCount} (${cappedCount} over batch limit)`);
 
         if (eligibleJobs.length === 0) {
             console.log("No eligible jobs found.");
+            console.log(`Run totals: applied 0, skipped ${jobs.length}, failed 0, needs review 0.`);
             return;
         }
 
@@ -40,7 +54,15 @@ class BatchPipeline {
         this.agent.addJobs(eligibleJobs);
 
         // 3. Start batch processing
-        await this.agent.processBatch();
+        const applicationSummary = await this.agent.processBatch();
+
+        console.log("\nFULL PIPELINE TOTALS");
+        console.log(`Received: ${jobs.length}`);
+        console.log(`Applied: ${applicationSummary.applied}`);
+        console.log(`Skipped: ${rejectedCount + applicationSummary.skipped}`);
+        console.log(`Failed: ${applicationSummary.failed}`);
+        console.log(`Needs human review: ${applicationSummary.needsReview}`);
+        console.log(`Not processed: ${applicationSummary.notProcessed}`);
     }
 
     isEligible(job) {
@@ -61,27 +83,36 @@ class BatchPipeline {
             };
         }
 
-        // Job age check
-        if (job.postedAt) {
-            const postedTime = new Date(job.postedAt);
-            const currentTime = new Date();
+        // Enforce the age limit only when the source provided a real date.
+        if (!job.postedAt) {
+            return {
+                eligible: false,
+                reason: "Posting time is unavailable"
+            };
+        }
 
-            const ageMs = currentTime - postedTime;
-            const ageHours = ageMs / (1000 * 60 * 60);
+        const postedTime = new Date(job.postedAt);
+        const ageHours = (Date.now() - postedTime.getTime()) / (1000 * 60 * 60);
 
-            if (ageHours > config.jobAgeHours) {
-                return {
-                    eligible: false,
-                    reason: `Job is older than ${config.jobAgeHours} hours`
-                };
-            }
+        if (!Number.isFinite(ageHours)) {
+            return {
+                eligible: false,
+                reason: "Posting time is invalid"
+            };
+        }
 
-            if (ageHours < 0) {
-                return {
-                    eligible: false,
-                    reason: "Invalid future postedAt time"
-                };
-            }
+        if (ageHours > config.jobAgeHours) {
+            return {
+                eligible: false,
+                reason: `Job is older than ${config.jobAgeHours} hours`
+            };
+        }
+
+        if (ageHours < 0) {
+            return {
+                eligible: false,
+                reason: "Invalid future postedAt time"
+            };
         }
 
         // Location check
