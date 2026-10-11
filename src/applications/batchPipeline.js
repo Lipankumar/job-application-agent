@@ -1,5 +1,5 @@
 const ApplicationAgent = require("./applicationAgent");
-const candidate = require("../config/candidate.json");
+const candidate = require("../config/candidateProfile");
 const config = require("../config/application.json");
 
 class BatchPipeline {

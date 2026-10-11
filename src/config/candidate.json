@@ -1,14 +1,5 @@
 {
-  "name": "LIPAN KUMAR DAKUA",
-  "email": "",
-  "phone": "",
-  "experience": {
-    "years": 3.8,
-    "level": "Senior Backend Engineer / SDE-2",
-    "currentRole": "SDE-2 / SDE-1 at Zype",
-    "currentCompany": "Zype",
-    "primaryDomain": "FinTech / Personal Lending"
-  },
+  "experience": {},
   "skills": [
     "Node.js",
     "Express.js",
@@ -63,10 +54,6 @@
     "Bangalore",
     "Remote"
   ],
-  "noticePeriod": {
-    "days": 60,
-    "currentlyServing": false
-  },
   "workPreferences": {
     "jobType": "Full-time",
     "workMode": [

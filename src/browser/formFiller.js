@@ -39,7 +39,7 @@ function candidateValue(field, candidate) {
         return candidate.experience?.currentRole || candidate.experience?.level;
     }
     if (/location|city/.test(text)) {
-        return candidate.location || candidate.preferredLocations?.[0];
+        return candidate.location;
     }
     if (/notice period/.test(text)) {
         return candidate.noticePeriod?.days;

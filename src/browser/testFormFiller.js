@@ -2,15 +2,8 @@ require("dotenv").config();
 
 const { chromium } = require("playwright");
 const { fillForm } = require("./formFiller");
-const candidate = require("../config/candidate.json");
-const candidateData = {
-    name: "Lipan Kumar Dakua",
-    email: process.env.CANDIDATE_EMAIL,
-    phone: process.env.CANDIDATE_PHONE,
-    location: candidate.preferredLocations[0],
-    experience: "3.9",
-    currentCompany: candidate.experience.currentCompany
-};
+const candidate = require("../config/candidateProfile");
+const candidateData = candidate;
 
 async function main() {
 

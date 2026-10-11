@@ -1,7 +1,7 @@
 const ApplicationQueue = require("./applicationQueue");
 const readline = require("readline");
 const ApplicationSession = require("./applicationSession");
-const candidateData = require("../config/candidate.json");
+const candidateData = require("../config/candidateProfile");
 const applicationConfig = require("../config/application.json");
 const { addApplication, getHistory } = require("./applicationHistory");
 
@@ -9,12 +9,7 @@ class ApplicationAgent {
     constructor() {
         this.queue = new ApplicationQueue();
         this.session = new ApplicationSession();
-        this.candidateData = {
-            ...candidateData,
-            email: candidateData.email || process.env.CANDIDATE_EMAIL || "",
-            phone: candidateData.phone || process.env.CANDIDATE_PHONE || "",
-            location: candidateData.location || candidateData.preferredLocations?.[0] || ""
-        };
+        this.candidateData = candidateData;
 
         this.rl = readline.createInterface({
             input: process.stdin,
@@ -83,7 +78,7 @@ class ApplicationAgent {
             console.log("🌐 Opening application...");
             console.log(`🔗 Opening: ${job.url}`);
 
-            await this.session.openJob(job.url);
+            await this.session.openJob(job.url, job.source);
 
             // --------------------------------
             // 2. Detect + autofill

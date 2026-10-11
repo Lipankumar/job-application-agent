@@ -1,7 +1,7 @@
 const { discoverJobs } = require("../jobs/discovery/jobDiscovery");
 const { matchJob } = require("../matching/jobMatcher");
 const BatchPipeline = require("./batchPipeline");
-const candidate = require("../config/candidate.json");
+const candidate = require("../config/candidateProfile");
 
 async function runBatch() {
     console.log("\n🚀 Starting job application batch...\n");

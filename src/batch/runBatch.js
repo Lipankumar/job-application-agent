@@ -2,7 +2,7 @@ const { discoverJobs } = require("../jobs/discovery/jobDiscovery");
 const { matchJob } = require("../matching/jobMatcher");
 const ApplicationAgent = require("../applications/applicationAgent");
 
-const candidate = require("../config/candidate.json");
+const candidate = require("../config/candidateProfile");
 const config = require("../config/agentConfig");
 
 const MATCH_THRESHOLD = config.matching.threshold;

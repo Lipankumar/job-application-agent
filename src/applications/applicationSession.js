@@ -10,6 +10,8 @@ class ApplicationSession {
         this.browser = null;
         this.context = null;
         this.page = null;
+        this.pagesByPlatform = new Map();
+        this.unassignedPages = [];
     }
 
     async start() {
@@ -22,17 +24,28 @@ class ApplicationSession {
             }
         );
 
-        this.page = this.context.pages()[0] || await this.context.newPage();
+        this.unassignedPages = this.context.pages();
 
         console.log("🌐 Browser started");
     }
 
-    async openJob(url) {
-        if (!this.page) {
+    async openJob(url, source) {
+        if (!this.context) {
             throw new Error("Browser session not started");
         }
 
-        console.log(`🔗 Opening: ${url}`);
+        const platform = String(source || new URL(url).hostname)
+            .toLowerCase()
+            .replace(/[^a-z0-9.-]/g, "");
+
+        if (!this.pagesByPlatform.has(platform)) {
+            const page = this.unassignedPages.shift() || await this.context.newPage();
+            this.pagesByPlatform.set(platform, page);
+        }
+
+        this.page = this.pagesByPlatform.get(platform);
+
+        console.log(`🔗 Opening ${platform} in its own Chrome tab: ${url}`);
 
         await this.page.goto(url, {
             waitUntil: "domcontentloaded",
@@ -58,6 +71,7 @@ class ApplicationSession {
 
             if (popup) {
                 this.page = popup;
+                this.pagesByPlatform.set(platform, popup);
             }
 
             await this.page.waitForLoadState("domcontentloaded", {
@@ -165,6 +179,8 @@ class ApplicationSession {
         this.browser = null;
         this.context = null;
         this.page = null;
+        this.pagesByPlatform.clear();
+        this.unassignedPages = [];
     }
 }
 

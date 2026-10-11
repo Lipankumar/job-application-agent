@@ -38,6 +38,7 @@ playwright-profile/
 # ==============================
 
 src/documents/resume.pdf
+src/config/candidate.json
 
 
 # ==============================

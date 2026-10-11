@@ -6,23 +6,10 @@ const {
     matchJob
 } = require("../../matching/jobMatcher");
 
-const fs = require("fs");
-const path = require("path");
-
+const candidateProfile = require("../../config/candidateProfile");
 
 function loadCandidate() {
-
-    const candidatePath = path.join(
-        __dirname,
-        "../../config/candidate.json"
-    );
-
-    const candidateData = fs.readFileSync(
-        candidatePath,
-        "utf-8"
-    );
-
-    return JSON.parse(candidateData);
+    return candidateProfile;
 }
 
 

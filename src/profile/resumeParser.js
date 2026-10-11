@@ -68,11 +68,33 @@ Rules:
   // 4. Get LLM response
   const content = response.choices[0].message.content;
 
-  console.log("===== LLM RESPONSE =====");
-  console.log(content);
-
   // 5. Convert JSON string → JavaScript object
   const parsedResume = JSON.parse(content);
+
+  // Keep identifying and candidate-specific details in the ignored .env file.
+  const envPath = path.join(__dirname, "../../.env");
+  const envValues = {
+    CANDIDATE_NAME: parsedResume.name,
+    CANDIDATE_EMAIL: parsedResume.email,
+    CANDIDATE_PHONE: parsedResume.phone,
+    CANDIDATE_EXPERIENCE_YEARS: parsedResume.experience?.years,
+    CANDIDATE_EXPERIENCE_LEVEL: parsedResume.experience?.level,
+    CANDIDATE_CURRENT_ROLE: parsedResume.experience?.currentRole,
+    CANDIDATE_PRIMARY_DOMAIN: parsedResume.experience?.primaryDomain
+  };
+  let envContent = fs.existsSync(envPath)
+    ? fs.readFileSync(envPath, "utf8")
+    : "";
+
+  for (const [key, value] of Object.entries(envValues)) {
+    if (value === undefined || value === null || value === "") continue;
+    const line = `${key}=${JSON.stringify(String(value))}`;
+    const keyPattern = new RegExp(`^${key}=.*$`, "m");
+    envContent = keyPattern.test(envContent)
+      ? envContent.replace(keyPattern, line)
+      : `${envContent}${envContent.endsWith("\n") || !envContent ? "" : "\n"}${line}\n`;
+  }
+  fs.writeFileSync(envPath, envContent);
 
   // 6. Read existing candidate.json
   const candidatePath = path.join(
@@ -88,15 +110,6 @@ Rules:
   const updatedCandidate = {
     ...existingCandidate,
 
-    name: parsedResume.name || existingCandidate.name,
-    email: parsedResume.email || existingCandidate.email,
-    phone: parsedResume.phone || existingCandidate.phone,
-
-    experience: {
-      ...existingCandidate.experience,
-      ...parsedResume.experience,
-    },
-
     skills:
       parsedResume.skills?.length > 0
         ? parsedResume.skills
@@ -109,7 +122,7 @@ Rules:
     JSON.stringify(updatedCandidate, null, 2)
   );
 
-  console.log("✅ candidate.json updated successfully");
+  console.log("✅ Candidate environment data and skills updated.");
 }
 
 parseResume().catch((error) => {

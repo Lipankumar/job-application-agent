@@ -1,4 +1,11 @@
 const path = require("path");
+const os = require("os");
+require("dotenv").config();
+
+const configuredUserDataDir = process.env.BROWSER_USER_DATA_DIR?.trim();
+const userDataDir = configuredUserDataDir
+    ? path.resolve(configuredUserDataDir.replace(/^~(?=$|[\\/])/, os.homedir()))
+    : path.join(process.cwd(), "data", "browser-profile");
 
 const browserConfig = {
     headless: false,
@@ -7,11 +14,7 @@ const browserConfig = {
     // Chrome instead of an editor webview or Playwright's bundled browser.
     channel: process.env.BROWSER_CHANNEL || "chrome",
 
-    userDataDir: path.join(
-        process.cwd(),
-        "data",
-        "browser-profile"
-    ),
+    userDataDir,
 
     slowMo: 100
 };
