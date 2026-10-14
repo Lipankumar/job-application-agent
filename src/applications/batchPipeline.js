@@ -26,6 +26,16 @@ class BatchPipeline {
             }
         }
 
+        // Apply recent listings first, then older listings, with undated jobs
+        // as the last fallback when there are not enough recent matches.
+        eligibleBeforeLimit.sort((a, b) => {
+            const aTime = a.postedAt ? new Date(a.postedAt).getTime() : NaN;
+            const bTime = b.postedAt ? new Date(b.postedAt).getTime() : NaN;
+            if (!Number.isFinite(aTime)) return Number.isFinite(bTime) ? 1 : 0;
+            if (!Number.isFinite(bTime)) return -1;
+            return bTime - aTime;
+        });
+
         const eligibleJobs = eligibleBeforeLimit.slice(0, config.maxApplicationsPerBatch);
         const cappedJobs = eligibleBeforeLimit.slice(config.maxApplicationsPerBatch);
         for (const job of cappedJobs) {
@@ -83,32 +93,14 @@ class BatchPipeline {
             };
         }
 
-        // Enforce the age limit only when the source provided a real date.
-        if (!job.postedAt) {
-            return {
-                eligible: false,
-                reason: "Posting time is unavailable"
-            };
-        }
+        // Date availability and age affect priority, not eligibility. Reject
+        // only a known future date; old or undated jobs remain fallback options.
+        const postedTime = job.postedAt ? new Date(job.postedAt) : null;
+        const ageHours = postedTime && Number.isFinite(postedTime.getTime())
+            ? (Date.now() - postedTime.getTime()) / (1000 * 60 * 60)
+            : NaN;
 
-        const postedTime = new Date(job.postedAt);
-        const ageHours = (Date.now() - postedTime.getTime()) / (1000 * 60 * 60);
-
-        if (!Number.isFinite(ageHours)) {
-            return {
-                eligible: false,
-                reason: "Posting time is invalid"
-            };
-        }
-
-        if (ageHours > config.jobAgeHours) {
-            return {
-                eligible: false,
-                reason: `Job is older than ${config.jobAgeHours} hours`
-            };
-        }
-
-        if (ageHours < 0) {
+        if (Number.isFinite(ageHours) && ageHours < 0) {
             return {
                 eligible: false,
                 reason: "Invalid future postedAt time"

@@ -2,6 +2,7 @@ const { chromium } = require("playwright");
 const browserConfig = require("../browser/browserConfig");
 const { detectForm } = require("../browser/formDetector");
 const { scanForm } = require("../safety/safetyScanner");
+const { getIndeedAccessIssue } = require("../jobs/indeedAccessGuard");
 
 const {fillForm} = require("../browser/formFiller");
 
@@ -81,6 +82,12 @@ class ApplicationSession {
         }
 
         console.log(`✅ Page loaded: ${this.page.url()}`);
+
+        const pageText = await this.page.locator("body").innerText().catch(() => "");
+        const accessIssue = getIndeedAccessIssue(this.page.url(), pageText);
+        if (accessIssue) {
+            throw new Error(`${accessIssue} Skip this job and retry after resolving the challenge.`);
+        }
     }
 
     async detectAndFill(candidateData) {

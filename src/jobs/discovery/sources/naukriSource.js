@@ -27,7 +27,7 @@ async function discoverNaukriJobs(page, options = {}) {
             keywordSlug
         )}-jobs-in-${encodeURIComponent(
             locationSlug
-        )}?jobAge=1`;
+        )}`;
 
     console.log(`🌐 Opening: ${searchUrl}`);
 
@@ -55,8 +55,8 @@ async function discoverNaukriJobs(page, options = {}) {
      * may contain duplicate cards.
      */
     const scanLimit = cardCount;
-    let skippedUnknownDate = 0;
-    let skippedOld = 0;
+    let undatedCount = 0;
+    let olderCount = 0;
 
     for (let i = 0; i < scanLimit; i++) {
         const card = cards.nth(i);
@@ -120,17 +120,17 @@ async function discoverNaukriJobs(page, options = {}) {
 
             const postedAt = normalizePostedAt(postedLabel);
             if (!postedAt) {
-                skippedUnknownDate++;
-                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (posting time unavailable)`);
-                continue;
+                undatedCount++;
             }
 
-            const ageHours = (Date.now() - new Date(postedAt).getTime()) / (60 * 60 * 1000);
-            if (ageHours < 0 || ageHours > maxAgeHours) {
-                skippedOld++;
-                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (posted ${ageHours.toFixed(1)} hours ago)`);
+            const ageHours = postedAt
+                ? (Date.now() - new Date(postedAt).getTime()) / (60 * 60 * 1000)
+                : NaN;
+            if (Number.isFinite(ageHours) && ageHours < 0) {
+                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (posting time is in the future)`);
                 continue;
             }
+            if (Number.isFinite(ageHours) && ageHours > maxAgeHours) olderCount++;
 
             const cleanTitle = title.trim();
 
@@ -172,8 +172,8 @@ async function discoverNaukriJobs(page, options = {}) {
     }
 
     console.log(`\n📦 Raw jobs collected: ${jobs.length}`);
-    console.log(`🕒 Skipped outside the last ${maxAgeHours} hours: ${skippedOld}`);
-    console.log(`❔ Skipped because posting time was unavailable: ${skippedUnknownDate}`);
+    console.log(`🕒 Older than ${maxAgeHours} hours, retained as fallback: ${olderCount}`);
+    console.log(`❔ Posting time unavailable, retained as final fallback: ${undatedCount}`);
 
     /*
      * Use the existing shared deduplicator.
@@ -183,6 +183,16 @@ async function discoverNaukriJobs(page, options = {}) {
     console.log(
         `🧹 Unique jobs after deduplication: ${uniqueJobs.length}`
     );
+
+    // Keep jobs within the configured age window first, then older jobs;
+    // listings without a usable date are the final fallback.
+    uniqueJobs.sort((a, b) => {
+        const aTime = a.postedAt ? new Date(a.postedAt).getTime() : NaN;
+        const bTime = b.postedAt ? new Date(b.postedAt).getTime() : NaN;
+        if (!Number.isFinite(aTime)) return Number.isFinite(bTime) ? 1 : 0;
+        if (!Number.isFinite(bTime)) return -1;
+        return bTime - aTime;
+    });
 
     const finalJobs = uniqueJobs.slice(0, maxJobs);
 

@@ -77,8 +77,8 @@ async function discoverHiristJobs(page, options = {}) {
     }
 
     const jobs = [];
-    let skippedUnknownDate = 0;
-    let skippedOutsideWindow = 0;
+    let unknownDateCount = 0;
+    let outsideWindowCount = 0;
 
     for (const listing of listings) {
         const postedAt = normalizePostedAt(listing.postedAtText);
@@ -86,19 +86,18 @@ async function discoverHiristJobs(page, options = {}) {
             ? (Date.now() - new Date(postedAt).getTime()) / (60 * 60 * 1000)
             : NaN;
 
-        if (!Number.isFinite(ageHours)) {
-            skippedUnknownDate++;
-            console.log(`⏭️ Hirist skipped ${listing.title || listing.url}: posting time unavailable`);
-            continue;
-        }
-
-        if (ageHours < 0 || ageHours > maxAgeHours) {
-            skippedOutsideWindow++;
-            console.log(`⏭️ Hirist skipped ${listing.title || listing.url}: posted ${ageHours.toFixed(1)} hours ago`);
-            continue;
-        }
-
         if (!listing.title) continue;
+
+        if (!Number.isFinite(ageHours)) {
+            unknownDateCount++;
+        } else if (ageHours > maxAgeHours) {
+            outsideWindowCount++;
+        }
+
+        if (ageHours < 0) {
+            console.log(`⏭️ Hirist skipped ${listing.title || listing.url}: posting time is in the future`);
+            continue;
+        }
 
         jobs.push(createJob({
             title: listing.title,
@@ -111,11 +110,22 @@ async function discoverHiristJobs(page, options = {}) {
             postedAt
         }));
 
-        if (jobs.length >= maxJobs) break;
     }
 
-    console.log(`📊 Hirist recent jobs: ${jobs.length}; skipped outside 24h: ${skippedOutsideWindow}; unknown posting time: ${skippedUnknownDate}`);
-    return jobs;
+    // Prefer fresh postings, while keeping older and undated jobs available
+    // after the recent ones. This ordering also determines which jobs survive
+    // maxJobs when the listing page contains more results than the limit.
+    jobs.sort((a, b) => {
+        const aTime = a.postedAt ? new Date(a.postedAt).getTime() : NaN;
+        const bTime = b.postedAt ? new Date(b.postedAt).getTime() : NaN;
+        if (!Number.isFinite(aTime)) return Number.isFinite(bTime) ? 1 : 0;
+        if (!Number.isFinite(bTime)) return -1;
+        return bTime - aTime;
+    });
+
+    const prioritizedJobs = jobs.slice(0, maxJobs);
+    console.log(`📊 Hirist jobs: ${prioritizedJobs.length}; within ${maxAgeHours}h prioritized: ${prioritizedJobs.filter(job => job.postedAt && (Date.now() - new Date(job.postedAt).getTime()) / 3600000 <= maxAgeHours).length}; older retained as fallback: ${outsideWindowCount}; undated retained as final fallback: ${unknownDateCount}`);
+    return prioritizedJobs;
 }
 
 module.exports = { discoverHiristJobs };
