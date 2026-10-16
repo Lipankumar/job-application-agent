@@ -1,10 +1,12 @@
 const { createJob } = require("../../job");
 const normalizePostedAt = require("../../normalizeJobDate");
+const { shouldIncludeJobByAge } = require("../../jobAgePolicy");
 
 async function discoverHiristJobs(page, options = {}) {
     const {
         maxJobs = 10,
         maxAgeHours = 24,
+        includeOlderJobs = false,
         searchUrl = "https://www.hirist.tech/k/nodejs-jobs"
     } = options;
 
@@ -94,8 +96,11 @@ async function discoverHiristJobs(page, options = {}) {
             outsideWindowCount++;
         }
 
-        if (ageHours < 0) {
-            console.log(`⏭️ Hirist skipped ${listing.title || listing.url}: posting time is in the future`);
+        if (!shouldIncludeJobByAge(postedAt, maxAgeHours, includeOlderJobs)) {
+            const ageMessage = ageHours < 0
+                ? "posting time is in the future"
+                : `posted more than ${maxAgeHours} hours ago`;
+            console.log(`⏭️ Hirist skipped ${listing.title || listing.url}: ${ageMessage}`);
             continue;
         }
 

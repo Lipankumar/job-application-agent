@@ -15,12 +15,17 @@ const { discoverIndeedJobs } = require("./sources/indeedSource");
 const { discoverInstahyreJobs } = require("./sources/instahyreSource");
 const { removeDuplicates } = require("../storage/jobDeduplicator");
 const { jobAgeHours } = require("../../config/application.json");
+const { isOlderJobsEnabled } = require("../jobAgePolicy");
 
 function isPlatformEnabled(value) {
     return String(value ?? "true").trim().toLowerCase() === "true";
 }
 
 async function discoverJobs() {
+    const includeOlderJobs = isOlderJobsEnabled();
+    const maxJobs = includeOlderJobs ? Infinity : 10;
+    console.log(`🕒 Jobs older than ${jobAgeHours} hours: ${includeOlderJobs ? "included" : "hidden"} (ENABLE_OLDER_JOBS=${includeOlderJobs})`);
+
     const platforms = [
         {
             name: "naukri",
@@ -30,15 +35,16 @@ async function discoverJobs() {
             options: {
                 keyword: "Node.js Backend Developer",
                 location: "Bangalore",
-                maxJobs: 10,
-                maxAgeHours: jobAgeHours
+                maxJobs,
+                maxAgeHours: jobAgeHours,
+                includeOlderJobs
             }
         },
         {
             name: "hirist",
             enabled: isPlatformEnabled(process.env.ENABLE_HIRIST),
             discover: discoverHiristJobs,
-            options: { maxJobs: 10, maxAgeHours: jobAgeHours }
+            options: { maxJobs, maxAgeHours: jobAgeHours, includeOlderJobs }
         },
         {
             name: "indeed",
@@ -47,8 +53,9 @@ async function discoverJobs() {
             options: {
                 keyword: "Node.js Backend Developer",
                 location: "Bangalore",
-                maxJobs: 10,
-                maxAgeHours: jobAgeHours
+                maxJobs,
+                maxAgeHours: jobAgeHours,
+                includeOlderJobs
             }
         },
         {
@@ -59,8 +66,9 @@ async function discoverJobs() {
             options: {
                 keyword: "Node.js Backend Developer",
                 location: "Bangalore",
-                maxJobs: 10,
-                maxAgeHours: jobAgeHours
+                maxJobs,
+                maxAgeHours: jobAgeHours,
+                includeOlderJobs
             }
         }
     ];

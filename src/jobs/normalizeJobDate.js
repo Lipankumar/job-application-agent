@@ -56,7 +56,7 @@ function normalizePostedAt(value) {
     }
 
     const daysMatch = text.match(
-        /(\d+)\s*days?\s*ago/
+        /(\d+)\+?\s*days?\s*ago/
     );
 
     if (daysMatch) {
@@ -65,6 +65,24 @@ function normalizePostedAt(value) {
         return new Date(
             now - days * 24 * 60 * 60 * 1000
         ).toISOString();
+    }
+
+    const weeksMatch = text.match(
+        /(\d+)\+?\s*weeks?\s*ago/
+    );
+
+    if (weeksMatch) {
+        const weeks = Number(weeksMatch[1]);
+        return new Date(now - weeks * 7 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    const monthsMatch = text.match(
+        /(\d+)\+?\s*months?\s*ago/
+    );
+
+    if (monthsMatch) {
+        const months = Number(monthsMatch[1]);
+        return new Date(now - months * 30 * 24 * 60 * 60 * 1000).toISOString();
     }
 
     return null;

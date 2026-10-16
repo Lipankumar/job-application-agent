@@ -1,5 +1,6 @@
 const { createJob } = require("../../job");
 const normalizePostedAt = require("../../normalizeJobDate");
+const { shouldIncludeJobByAge } = require("../../jobAgePolicy");
 
 const CITY_ALIASES = [
     { keys: ["bangalore", "bengaluru"], label: "Bangalore" },
@@ -172,6 +173,7 @@ async function discoverInstahyreJobs(page, options = {}) {
         location = "Bangalore",
         maxJobs = 10,
         maxAgeHours = 24,
+        includeOlderJobs = false,
         searchUrl = `https://www.instahyre.com/search-jobs/?q=${encodeURIComponent(keyword)}${location ? `&location=${encodeURIComponent(location)}` : ""}`
     } = options;
 
@@ -249,8 +251,11 @@ async function discoverInstahyreJobs(page, options = {}) {
             outsideWindowCount++;
         }
 
-        if (ageHours < 0) {
-            console.log(`⏭️ Instahyre skipped ${title}: posting time is in the future`);
+        if (!shouldIncludeJobByAge(postedAt, maxAgeHours, includeOlderJobs)) {
+            const ageMessage = ageHours < 0
+                ? "posting time is in the future"
+                : `posted more than ${maxAgeHours} hours ago`;
+            console.log(`⏭️ Instahyre skipped ${title}: ${ageMessage}`);
             continue;
         }
 

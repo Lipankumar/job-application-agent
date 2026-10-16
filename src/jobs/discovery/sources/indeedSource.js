@@ -1,6 +1,7 @@
 const { createJob } = require("../../job");
 const normalizePostedAt = require("../../normalizeJobDate");
 const { getIndeedAccessIssue } = require("../../indeedAccessGuard");
+const { shouldIncludeJobByAge } = require("../../jobAgePolicy");
 
 async function discoverIndeedJobs(page, options = {}) {
     const {
@@ -8,6 +9,7 @@ async function discoverIndeedJobs(page, options = {}) {
         location = "Bangalore",
         maxJobs = 10,
         maxAgeHours = 24,
+        includeOlderJobs = false,
         searchUrl
     } = options;
 
@@ -92,8 +94,13 @@ async function discoverIndeedJobs(page, options = {}) {
             unknownDateCount++;
         } else if (ageHours > maxAgeHours) {
             outsideWindowCount++;
-        } else if (ageHours < 0) {
-            console.log(`⏭️ Indeed skipped ${listing.title}: posting time is in the future`);
+        }
+
+        if (!shouldIncludeJobByAge(postedAt, maxAgeHours, includeOlderJobs)) {
+            const ageMessage = ageHours < 0
+                ? "posting time is in the future"
+                : `posted more than ${maxAgeHours} hours ago`;
+            console.log(`⏭️ Indeed skipped ${listing.title}: ${ageMessage}`);
             continue;
         }
 

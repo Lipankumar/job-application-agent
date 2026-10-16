@@ -3,6 +3,10 @@ const browserConfig = require("../browser/browserConfig");
 const { detectForm } = require("../browser/formDetector");
 const { scanForm } = require("../safety/safetyScanner");
 const { getIndeedAccessIssue } = require("../jobs/indeedAccessGuard");
+const {
+    getInstahyreMatchThreshold,
+    parseInstahyreMatchScore
+} = require("../jobs/instahyre/instaMatchScore");
 
 const {fillForm} = require("../browser/formFiller");
 
@@ -55,6 +59,29 @@ class ApplicationSession {
 
         await this.page.waitForTimeout(2000);
 
+        let instahyreMatchScore = null;
+        if (platform === "instahyre") {
+            const pageTextBeforeApply = await this.page.locator("body").innerText().catch(() => "");
+            instahyreMatchScore = parseInstahyreMatchScore(pageTextBeforeApply);
+            const threshold = getInstahyreMatchThreshold();
+
+            if (instahyreMatchScore === null) {
+                return {
+                    shouldApply: false,
+                    reason: "Could not read the InstaMatch score from the job page."
+                };
+            }
+
+            console.log(`📊 InstaMatch score: ${instahyreMatchScore}% (required: > ${threshold}%)`);
+            if (instahyreMatchScore <= threshold) {
+                return {
+                    shouldApply: false,
+                    instahyreMatchScore,
+                    reason: `InstaMatch score ${instahyreMatchScore}% is not above the ${threshold}% threshold.`
+                };
+            }
+        }
+
         // Search results usually link to a job detail page. Open its Apply
         // action first so the form filler works on the application form.
         const applyAction = this.page
@@ -88,6 +115,8 @@ class ApplicationSession {
         if (accessIssue) {
             throw new Error(`${accessIssue} Skip this job and retry after resolving the challenge.`);
         }
+
+        return { shouldApply: true, instahyreMatchScore };
     }
 
     async detectAndFill(candidateData) {

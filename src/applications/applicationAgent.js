@@ -4,6 +4,7 @@ const ApplicationSession = require("./applicationSession");
 const candidateData = require("../config/candidateProfile");
 const applicationConfig = require("../config/application.json");
 const { addApplication, getHistory } = require("./applicationHistory");
+const { getInstahyreMatchThreshold } = require("../jobs/instahyre/instaMatchScore");
 
 class ApplicationAgent {
     constructor() {
@@ -78,7 +79,28 @@ class ApplicationAgent {
             console.log("🌐 Opening application...");
             console.log(`🔗 Opening: ${job.url}`);
 
-            await this.session.openJob(job.url, job.source);
+            const pageResult = await this.session.openJob(job.url, job.source);
+
+            const isInstahyreJob = String(job.source || "").toLowerCase() === "instahyre" ||
+                /(^|\.)instahyre\.com$/i.test(new URL(job.url).hostname);
+
+            if (isInstahyreJob) {
+                const score = pageResult?.instahyreMatchScore;
+                const threshold = getInstahyreMatchThreshold();
+                job.instaMatchScore = Number.isFinite(score) ? score : null;
+
+                if (pageResult?.shouldApply !== true || !Number.isFinite(score) || score <= threshold) {
+                    const reason = pageResult?.reason ||
+                        (Number.isFinite(score)
+                            ? `InstaMatch score ${score}% is not above the ${threshold}% threshold.`
+                            : "Could not verify an InstaMatch score above the configured threshold.");
+                    this.queue.markSkipped(job, reason);
+                    console.log(`⏭️ ${job.title} at ${job.company}: SKIPPED — ${reason}`);
+                    return;
+                }
+
+                console.log(`✅ InstaMatch gate passed: ${score}% > ${threshold}%`);
+            }
 
             // --------------------------------
             // 2. Detect + autofill

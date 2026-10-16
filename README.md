@@ -86,7 +86,9 @@ The scheduler entry point is `node src/scheduler/scheduler.js`; it checks the co
 | Setting | Location | Purpose |
 | --- | --- | --- |
 | `ENABLE_NAUKRI`, `ENABLE_HIRIST`, `ENABLE_INDEED`, `ENABLE_INSTAHYRE` | `.env` | Enable or disable each discovery source; all default to enabled. Set a flag to `false` to skip that source. |
+| `ENABLE_OLDER_JOBS` | `.env` | Set `true` to include all detected listings older than the configured 24-hour window (and process them through normal matching); defaults to `false`, which hides known-old listings. |
 | `NAUKRI_EMAIL`, `NAUKRI_PASSWORD` | `.env` | Naukri sign-in credentials. Hirist discovery uses public listings; sign in to Hirist in the configured Chrome profile if an application requires it. |
+| `INSTAHYRE_MATCH_THRESHOLD` | `.env` | Instahyre's visible InstaMatch score must be strictly greater than this value before the agent opens the Apply action; defaults to `70` and accepts values from 0 to 100. Jobs with a missing or unreadable score are skipped. |
 | `CANDIDATE_*` | `.env` | Candidate identity, location, experience, and notice-period values. |
 | `BROWSER_CHANNEL`, `BROWSER_USER_DATA_DIR` | `.env` | Chrome channel and optional existing user profile path. |
 | Match threshold and scheduler time | `src/config/agentConfig.js` | Matching cutoff and daily scheduler time. |

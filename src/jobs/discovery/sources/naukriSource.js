@@ -1,13 +1,15 @@
 const { createJob } = require("../../job");
 const { removeDuplicates } = require("../../storage/jobDeduplicator");
 const normalizePostedAt = require("../../normalizeJobDate");
+const { shouldIncludeJobByAge } = require("../../jobAgePolicy");
 
 async function discoverNaukriJobs(page, options = {}) {
     const {
         keyword = "Node.js Backend Developer",
         location = "Bangalore",
         maxJobs = 10,
-        maxAgeHours = 24
+        maxAgeHours = 24,
+        includeOlderJobs = false
     } = options;
 
     console.log("\n🔎 Searching Naukri...");
@@ -99,7 +101,7 @@ async function discoverNaukriJobs(page, options = {}) {
                 .catch(() => null);
 
             const postedLabel = await card.evaluate(element => {
-                const relativeDate = /(?:just now|just posted|moments ago|today|yesterday|few (?:minutes|hours) ago|\d+\s*(?:minutes?|mins?|hours?|hrs?|days?)\s*ago)/i;
+                const relativeDate = /(?:just now|just posted|moments ago|today|yesterday|few (?:minutes|hours) ago|\d+\+?\s*(?:minutes?|mins?|hours?|hrs?|days?|weeks?|months?)\s*ago)/i;
                 const candidates = Array.from(element.querySelectorAll(
                     'time[datetime], [class*="post-day" i], [class*="posted" i], [class*="date" i], span, small'
                 ));
@@ -126,8 +128,11 @@ async function discoverNaukriJobs(page, options = {}) {
             const ageHours = postedAt
                 ? (Date.now() - new Date(postedAt).getTime()) / (60 * 60 * 1000)
                 : NaN;
-            if (Number.isFinite(ageHours) && ageHours < 0) {
-                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (posting time is in the future)`);
+            if (!shouldIncludeJobByAge(postedAt, maxAgeHours, includeOlderJobs)) {
+                const ageMessage = ageHours < 0
+                    ? "posting time is in the future"
+                    : `posted more than ${maxAgeHours} hours ago`;
+                console.log(`⏭️ Skipped: ${title.trim()} — ${company?.trim() || "Unknown"} (${ageMessage})`);
                 continue;
             }
             if (Number.isFinite(ageHours) && ageHours > maxAgeHours) olderCount++;
